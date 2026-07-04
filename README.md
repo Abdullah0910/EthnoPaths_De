@@ -108,3 +108,10 @@ Google AI Studio
 
 https://ai.studio/apps/9e46d75c-22d6-44a1-b2e1-93054519f526
 
+---
+
+## 👨‍💻 Author
+
+**Abdullah Khan**
+
+---
