@@ -1,46 +1,66 @@
-# 🌍 EthnoPaths
-## GenAI-Powered Cultural Travel Discovery
+<div align="center">
 
-**EthnoPaths** is a GenAI-powered cultural travel platform that helps travelers discover authentic destinations beyond mainstream tourism. Powered by **Google Gemini**, it creates personalized cultural expedition guides featuring hidden gems, immersive storytelling, heritage insights, authentic local experiences, and sustainable travel recommendations.
+# 🌍 EthnoPaths
+
+### GenAI-Powered Cultural Travel Discovery
+
+Discover hidden gems, immersive cultural stories, authentic local experiences, and sustainable travel recommendations powered by Google Gemini.
+
+</div>
+
+---
+
+## 📖 Overview
+
+EthnoPaths is a GenAI-powered cultural travel platform that helps travelers explore destinations beyond traditional tourism.
+
+Using **Google Gemini**, the application generates personalized cultural expedition guides featuring:
+
+- 🏛 Heritage & History
+- 💎 Hidden Gems
+- 🎭 Authentic Local Experiences
+- 📖 Immersive Oral Storytelling
+- 🍲 Traditional Cuisine
+- 🎉 Seasonal Cultural Events
+- 🗺 Personalized Expedition Itineraries
+- 💰 Budget Planning
+- 🌱 Sustainable Tourism Tips
+- 🛡 Cultural Etiquette & Safety Guidance
 
 ---
 
 ## ✨ Features
 
-- 🌍 AI-powered destination discovery
-- 💎 Hidden gems & crowd-free alternatives
-- 🏛 Heritage & historical insights
-- 📖 Immersive AI storytelling
-- 🎭 Authentic local cultural experiences
-- 🍲 Traditional cuisine recommendations
-- 🎉 Seasonal cultural events
-- 🗺 Personalized day-wise expedition itineraries
-- 💰 Budget-aware travel planning
-- 🌱 Sustainable tourism recommendations
-- 🛡 Cultural etiquette, safety tips & emergency contacts
-- 💾 Save expedition guides
-- 🖨 Printable travel dossiers
+- AI-powered destination discovery
+- Personalized cultural travel guides
+- Hidden gems and crowd-free alternatives
+- Heritage storytelling
+- Authentic local experiences
+- Local cuisine recommendations
+- Budget-aware itineraries
+- Sustainable tourism recommendations
+- Emergency contacts and travel safety
+- Printable expedition guides
+- Save travel guides for future reference
 
 ---
 
-## 🤖 Google Gemini Integration
+## 🤖 GenAI Integration
 
-EthnoPaths uses **Google Gemini (Google AI Studio)** as its core intelligence engine.
+**Google Gemini API (Google AI Studio)** powers the application's intelligence.
 
-Gemini dynamically generates:
+Gemini generates:
 
-- Personalized destination recommendations
+- Destination recommendations
 - Cultural storytelling
-- Hidden gems
 - Heritage insights
-- Authentic local experiences
-- Local cuisine recommendations
-- Seasonal cultural events
-- Day-wise travel itineraries
-- Budget optimization
-- Sustainable tourism guidance
+- Hidden gems
+- Local events
+- Personalized itineraries
+- Budget recommendations
 - Cultural etiquette
-- Travel safety recommendations
+- Safety guidance
+- Sustainable travel suggestions
 
 ---
 
@@ -48,7 +68,7 @@ Gemini dynamically generates:
 
 - React
 - TypeScript
-- Express.js
+- Express
 - Tailwind CSS
 - Google Gemini API
 - Vite
@@ -84,7 +104,7 @@ npm run dev
 
 ## 🌐 Live Demo
 
-**Google AI Studio**
+Google AI Studio
 
 https://ai.studio/apps/9e46d75c-22d6-44a1-b2e1-93054519f526
 
