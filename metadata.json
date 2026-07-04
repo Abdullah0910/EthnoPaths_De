@@ -1,0 +1,6 @@
+{
+  "name": "AI Travel Discovery & Culture Guide",
+  "description": "A GenAI-powered platform to discover destinations, hidden gems, local heritage, cultural events, and authentic local experiences.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
