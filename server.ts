@@ -37,7 +37,7 @@ if (apiKey) {
 }
 
 // Security Helper: Basic Input Validation and Prompt Injection Defense
-function validateTravelRequest(destination: string, interests: string[], duration: number): string | null {
+export function validateTravelRequest(destination: string, interests: string[], duration: number, budget?: string): string | null {
   if (!destination || typeof destination !== 'string' || destination.trim().length < 2) {
     return 'Invalid destination name. It must be a non-empty string of at least 2 characters.';
   }
@@ -47,8 +47,20 @@ function validateTravelRequest(destination: string, interests: string[], duratio
   if (!Array.isArray(interests) || interests.length === 0) {
     return 'Please select at least one travel interest or style.';
   }
-  if (typeof duration !== 'number' || duration < 1 || duration > 14) {
+  
+  // Strict check on interests items to prevent injection
+  for (const interest of interests) {
+    if (typeof interest !== 'string' || interest.length > 50) {
+      return 'Invalid interest filter format.';
+    }
+  }
+
+  if (typeof duration !== 'number' || isNaN(duration) || duration < 1 || duration > 14) {
     return 'Trip duration must be a number between 1 and 14 days.';
+  }
+
+  if (budget && !['budget', 'moderate', 'luxury'].includes(budget)) {
+    return 'Invalid budget tier provided.';
   }
 
   // Detect common prompt injection patterns
@@ -60,6 +72,8 @@ function validateTravelRequest(destination: string, interests: string[], duratio
     /override instructions/i,
     /instruction override/i,
     /sql injection/i,
+    /<\/script>/i,
+    /<script/i
   ];
 
   const fullInput = `${destination} ${interests.join(' ')}`;
@@ -70,6 +84,149 @@ function validateTravelRequest(destination: string, interests: string[], duratio
   }
 
   return null;
+}
+
+/**
+ * Resiliently extracts and parses JSON even if wrapped in markdown formatting
+ */
+export function cleanAndParseJSON<T>(rawText: string): T {
+  let cleanText = rawText.trim();
+  
+  // Strip opening and closing markdown JSON blocks if present
+  if (cleanText.startsWith('```')) {
+    cleanText = cleanText.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?\s*```$/, '');
+  }
+  
+  cleanText = cleanText.trim();
+  
+  // If the parsed response is still wrapped in brackets or quotes erroneously
+  try {
+    return JSON.parse(cleanText) as T;
+  } catch (initialError) {
+    // Attempt minor repair: find first '{' and last '}'
+    const firstBrace = cleanText.indexOf('{');
+    const lastBrace = cleanText.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      const repairedText = cleanText.substring(firstBrace, lastBrace + 1);
+      try {
+        return JSON.parse(repairedText) as T;
+      } catch (innerError) {
+        throw new Error(`JSON format could not be automatically repaired: ${initialError}`);
+      }
+    }
+    throw initialError;
+  }
+}
+
+/**
+ * Defensive data sanitizer that guarantees type-safety and fallback defaults 
+ * for every field in TravelData to prevent frontend client crashes.
+ */
+export function sanitizeTravelData(data: any): any {
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid travel data returned from AI.');
+  }
+
+  const safeArray = (arr: any) => Array.isArray(arr) ? arr : [];
+  const safeString = (str: any, fallback = '') => {
+    if (typeof str === 'string') return str;
+    if (typeof str === 'number' || typeof str === 'boolean') return String(str);
+    return fallback;
+  };
+  const safeNumber = (num: any, fallback = 0) => typeof num === 'number' ? num : (isNaN(Number(num)) ? fallback : Number(num));
+
+  return {
+    destinationName: safeString(data.destinationName, 'Unknown Destination'),
+    country: safeString(data.country, 'Unknown Country'),
+    overview: safeString(data.overview, 'No overview provided.'),
+    quickStats: {
+      bestSeason: safeString(data.quickStats?.bestSeason, 'All Year'),
+      currency: safeString(data.quickStats?.currency, 'Local Currency'),
+      language: safeString(data.quickStats?.language, 'Local Language'),
+      vibe: safeString(data.quickStats?.vibe, 'Authentic, Cultural'),
+    },
+    hiddenGems: safeArray(data.hiddenGems).map((gem: any) => ({
+      name: safeString(gem?.name, 'Hidden Gem'),
+      location: safeString(gem?.location, 'Local Area'),
+      culturalSignificance: safeString(gem?.culturalSignificance, 'Ancient story or local landmark'),
+      whyVisit: safeString(gem?.whyVisit, 'A unique exploration spot.'),
+    })),
+    culturalStorytelling: safeString(data.culturalStorytelling, 'No oral narrative available.'),
+    heritageSites: safeArray(data.heritageSites).map((site: any) => ({
+      name: safeString(site?.name, 'Heritage Site'),
+      location: safeString(site?.location, 'Destination Center'),
+      history: safeString(site?.history, 'Rich heritage and local history.'),
+      visitingTips: safeString(site?.visitingTips, 'Please respect local guidelines.'),
+    })),
+    authenticExperiences: safeArray(data.authenticExperiences).map((exp: any) => ({
+      title: safeString(exp?.title, 'Traditional Gathering'),
+      description: safeString(exp?.description, 'Connect with local traditions.'),
+      howToFind: safeString(exp?.howToFind, 'Ask local guides or visit municipal centers.'),
+      etiquetteCustoms: safeString(exp?.etiquetteCustoms, 'Respect local practices.'),
+    })),
+    foodRecommendations: safeArray(data.foodRecommendations).map((food: any) => ({
+      dishName: safeString(food?.dishName, 'Traditional Specialty'),
+      pronunciation: safeString(food?.pronunciation, ''),
+      culturalSignificance: safeString(food?.culturalSignificance, 'A classic regional dish.'),
+      recommendedPlaces: safeString(food?.recommendedPlaces, 'Traditional local eateries.'),
+      isStreetFood: !!food?.isStreetFood,
+    })),
+    localEvents: safeArray(data.localEvents).map((event: any) => ({
+      eventName: safeString(event?.eventName, 'Seasonal Celebration'),
+      seasonOrDate: safeString(event?.seasonOrDate, 'Traditional Dates'),
+      culturalMeaning: safeString(event?.culturalMeaning, 'A community festival.'),
+      travelerParticipation: safeString(event?.travelerParticipation, 'Observe respectfully and greet the hosts.'),
+    })),
+    itinerary: safeArray(data.itinerary).map((day: any) => ({
+      dayNumber: safeNumber(day?.dayNumber, 1),
+      theme: safeString(day?.theme, 'Cultural Discovery'),
+      items: safeArray(day?.items).map((item: any) => ({
+        timeOfDay: ['Morning', 'Afternoon', 'Evening'].includes(item?.timeOfDay) ? item.timeOfDay : 'Morning',
+        activity: safeString(item?.activity, 'Explore local surroundings'),
+        location: safeString(item?.location, 'Local Area'),
+        culturalNote: safeString(item?.culturalNote, 'Learn local customs and significance.'),
+        foodStop: item?.foodStop ? String(item.foodStop) : undefined,
+      })),
+    })),
+    budgetSuggestions: {
+      estimatedCostPerDayUSD: safeNumber(data.budgetSuggestions?.estimatedCostPerDayUSD, 100),
+      tier: safeString(data.budgetSuggestions?.tier, 'Moderate'),
+      breakdown: {
+        accommodation: safeString(data.budgetSuggestions?.breakdown?.accommodation, 'Standard Lodging'),
+        food: safeString(data.budgetSuggestions?.breakdown?.food, 'Traditional Diners'),
+        transport: safeString(data.budgetSuggestions?.breakdown?.transport, 'Local Transit'),
+        activities: safeString(data.budgetSuggestions?.breakdown?.activities, 'Historic Access Passes'),
+      },
+      savingTips: safeArray(data.budgetSuggestions?.savingTips).map((tip: any) => safeString(tip, 'Opt for local experiences.')),
+    },
+    travelTips: safeArray(data.travelTips).map((tip: any) => safeString(tip, 'Enjoy the local spirit with respect.')),
+    culturalEtiquette: {
+      dos: safeArray(data.culturalEtiquette?.dos).map((item: any) => safeString(item, 'Smile and greet gracefully.')),
+      donts: safeArray(data.culturalEtiquette?.donts).map((item: any) => safeString(item, 'Avoid disrupting sacred places.')),
+      localCustoms: safeString(data.culturalEtiquette?.localCustoms, 'Observe other visitors and local customs.'),
+    },
+    safetyAdvice: {
+      precautions: safeArray(data.safetyAdvice?.precautions).map((item: any) => safeString(item, 'Keep local contacts handy.')),
+      localSafetyLevel: safeString(data.safetyAdvice?.localSafetyLevel, 'Generally safe, maintain typical precautions.'),
+    },
+    emergencyContacts: {
+      police: safeString(data.emergencyContacts?.police, '112'),
+      ambulance: safeString(data.emergencyContacts?.ambulance, '112'),
+      fire: safeString(data.emergencyContacts?.fire, '112'),
+      helpfulPhrases: safeArray(data.emergencyContacts?.helpfulPhrases).map((phrase: any) => ({
+        phrase: safeString(phrase?.phrase, 'Hello / Thank you'),
+        translation: safeString(phrase?.translation, 'Standard Greeting'),
+        pronunciation: safeString(phrase?.pronunciation, 'Phonetic'),
+      })),
+    },
+    packingSuggestions: safeArray(data.packingSuggestions).map((item: any) => safeString(item, 'Comfortable light clothes')),
+    nearbyAlternatives: safeArray(data.nearbyAlternatives).map((alt: any) => ({
+      name: safeString(alt?.name, 'Traditional Outskirts'),
+      distance: safeString(alt?.distance, '30 mins'),
+      description: safeString(alt?.description, 'A quieter village rich with history.'),
+      whyVisit: safeString(alt?.whyVisit, 'Pristine atmosphere and welcoming locals.'),
+    })),
+  };
 }
 
 // Endpoint 1: Health Check
@@ -88,7 +245,7 @@ app.post('/api/travel/explore', async (req: Request, res: Response) => {
   const { destination, interests, budget, duration } = req.body;
 
   // Validate inputs
-  const validationError = validateTravelRequest(destination, interests, Number(duration));
+  const validationError = validateTravelRequest(destination, interests, Number(duration), budget);
   if (validationError) {
     return res.status(400).json({ error: validationError });
   }
@@ -235,8 +392,13 @@ Provide EXACTLY this JSON structure. Include at least 2 Hidden Gems, 2 Heritage 
       throw new Error('Gemini returned an empty response.');
     }
 
-    const parsedData = JSON.parse(responseText.trim());
-    return res.json(parsedData);
+    // Clean markdown and parse safely
+    const rawParsed = cleanAndParseJSON<any>(responseText);
+    
+    // Sanitize and structure with fallback values defensively
+    const sanitizedData = sanitizeTravelData(rawParsed);
+    
+    return res.json(sanitizedData);
   } catch (error: any) {
     console.error('Error generating travel guide:', error);
     return res.status(500).json({
@@ -259,12 +421,22 @@ app.post('/api/travel/tts', async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Text prompt is required for speech synthesis.' });
   }
 
-  const selectedVoice = voice || 'Zephyr'; // Default voice
+  // Cost and performance limitation: truncate text to 1000 characters maximum
+  const cleanedText = text.trim().substring(0, 1000);
+
+  // Validate voice name against approved prebuilt voice parameters
+  const validVoices = ['Zephyr', 'Kore', 'Puck', 'Charon', 'Fenrir'];
+  const selectedVoice = typeof voice === 'string' && validVoices.includes(voice) ? voice : 'Zephyr';
+
+  // Defensive input check for script tags or prompt injection in voice input
+  if (cleanedText.match(/ignore previous/i) || cleanedText.includes('<script>')) {
+    return res.status(400).json({ error: 'Potential security violation in synthesis query.' });
+  }
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3.1-flash-tts-preview',
-      contents: [{ parts: [{ text: `Say this beautifully and clearly as a professional cultural travel guide. Pause naturally at periods: ${text}` }] }],
+      contents: [{ parts: [{ text: `Say this beautifully and clearly as a professional cultural travel guide. Pause naturally at periods: ${cleanedText}` }] }],
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
@@ -311,6 +483,10 @@ async function startServer() {
   });
 }
 
-startServer().catch((err) => {
-  console.error('Failed to start server:', err);
-});
+const isTesting = process.env.NODE_ENV === 'test' || process.argv.some(arg => arg.includes('test'));
+
+if (!isTesting) {
+  startServer().catch((err) => {
+    console.error('Failed to start server:', err);
+  });
+}

@@ -21,6 +21,11 @@ interface TravelDashboardProps {
 export const TravelDashboard: React.FC<TravelDashboardProps> = ({ data, onSave, isSaved }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'culture' | 'experiences' | 'culinary' | 'itinerary' | 'budget'>('overview');
 
+  // Reset active tab to Overview when the destination changes
+  React.useEffect(() => {
+    setActiveTab('overview');
+  }, [data.destinationName]);
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: <MapPin className="h-4 w-4" /> },
     { id: 'culture', label: 'Culture & Heritage', icon: <BookOpen className="h-4 w-4" /> },

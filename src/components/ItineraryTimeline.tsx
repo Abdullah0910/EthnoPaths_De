@@ -16,6 +16,11 @@ export const ItineraryTimeline: React.FC<ItineraryTimelineProps> = ({ days, dest
   const [activeDayIndex, setActiveDayIndex] = useState(0);
   const [copied, setCopied] = useState(false);
 
+  // Reset active index to Day 1 when switching between itineraries
+  React.useEffect(() => {
+    setActiveDayIndex(0);
+  }, [days]);
+
   const activeDay = days[activeDayIndex] || days[0];
 
   const getTimeIcon = (time: 'Morning' | 'Afternoon' | 'Evening') => {

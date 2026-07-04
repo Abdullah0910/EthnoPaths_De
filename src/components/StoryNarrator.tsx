@@ -31,11 +31,28 @@ export const StoryNarrator: React.FC<StoryNarratorProps> = ({ storyText, destina
   // Clean up audio object on unmount
   useEffect(() => {
     return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
       }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, [audioUrl]);
+
+  // Reset audio cache and stop playback if the story text or destination changes
+  useEffect(() => {
+    stopAudio();
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
+      setAudioUrl(null);
+    }
+    setErrorMsg(null);
+  }, [storyText, destination]);
 
   const handleSynthesizeAndPlay = async () => {
     setErrorMsg(null);
@@ -44,13 +61,11 @@ export const StoryNarrator: React.FC<StoryNarratorProps> = ({ storyText, destina
     if (audioUrl && audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
-        setIsPlaying(false);
       } else {
         audioRef.current.play().catch((err) => {
           console.error('Audio playback failed:', err);
           setErrorMsg('Playback was blocked or failed.');
         });
-        setIsPlaying(true);
       }
       return;
     }
@@ -133,8 +148,8 @@ export const StoryNarrator: React.FC<StoryNarratorProps> = ({ storyText, destina
       audio.play().catch((err) => {
         console.error('Audio auto-play failed:', err);
         setErrorMsg('Click play to listen. Auto-play was restricted by browser policies.');
+        setIsPlaying(false);
       });
-      setIsPlaying(true);
     } catch (err: any) {
       console.error('TTS synthesis error:', err);
       // Robust fallback: use Web Speech API (speechSynthesis) if our custom Gemini TTS is unavailable
